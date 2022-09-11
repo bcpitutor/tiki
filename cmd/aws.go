@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
+
 	"net/http"
 	"net/url"
 	"os"
@@ -204,7 +205,7 @@ func do_web(
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("AWS Federated response: %v", err)
 		return
