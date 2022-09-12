@@ -10,7 +10,7 @@ type Config struct {
 	ViperConf       *viper.Viper
 	SelectedProfile string
 	JsonOutput      bool
-	Debug           bool
+	//Debug           bool   # TODO: do we really need this?
 }
 
 var AppConfig *Config

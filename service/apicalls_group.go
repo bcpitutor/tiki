@@ -2,8 +2,8 @@ package service
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/bcpitutor/tiki/backend"
@@ -48,7 +48,7 @@ func CreateGroup(dataFilePath string) map[string]any {
 		return map[string]any{"message": "dataFilePath is missing", "status": "error"}
 	}
 
-	postBody, err := ioutil.ReadFile(dataFilePath)
+	postBody, _ := os.ReadFile(dataFilePath)
 	result, err := backend.ServiceCall(
 		http.MethodPost,
 		"/group/create",
@@ -79,7 +79,7 @@ func DeleteGroup(groupName string) map[string]any {
 }
 
 func AddMemberToGroup(groupName string, memberEmail string) map[string]any {
-	postBody, err := utils.GetPostBody(
+	postBody, _ := utils.GetPostBody(
 		"newMemberEmail", memberEmail,
 	)
 
@@ -96,7 +96,7 @@ func AddMemberToGroup(groupName string, memberEmail string) map[string]any {
 }
 
 func DeleteMemberFromGroup(groupName string, memberEmail string) map[string]any {
-	postBody, err := utils.GetPostBody(
+	postBody, _ := utils.GetPostBody(
 		"deleteMemberEmail", memberEmail,
 	)
 	result, err := backend.ServiceCall(

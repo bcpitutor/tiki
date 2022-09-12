@@ -98,7 +98,6 @@ func do_aws(cmd *cobra.Command, args []string) {
 		panic("Error while initializing command, Check argument(s)")
 	}
 
-	//
 	result, err := service.ObtainTicket(ticketPath)
 	if err != nil {
 		utils.ErrOutput(

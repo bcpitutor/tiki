@@ -15,23 +15,19 @@ import (
 func ServiceCall(method string, url string, body io.Reader) (map[string]any, error) {
 	hclient := models.NewHTTPClientWithToken()
 
-	//profile := rootCmd.Flag("profile").Value.String()
-	//profile := appconfig.AppConfig.ViperConf.GetString("__profile__")
 	profile := appconfig.AppConfig.SelectedProfile
-	fmt.Printf("--- Got profile: %s\n", profile)
 
 	urlKey := fmt.Sprintf("%s.baseurl", profile)
 	baseURL := appconfig.AppConfig.ViperConf.GetString(urlKey)
 
-	//baseURL := viper.GetString("service.baseURL")
 	serviceURL := baseURL + url
 	var result map[string]any
 
-	fmt.Printf("ServiceCall: %s %s\n", method, serviceURL)
+	//fmt.Printf("ServiceCall: %s %s\n", method, serviceURL)
 
 	req, err := NewTikiClientRequest(method, serviceURL, body)
 	if err != nil {
-		return nil, fmt.Errorf("Unexpected error while creating request: %+v", err)
+		return nil, fmt.Errorf("unexpected error while creating request: %+v", err)
 	}
 
 	// TODO: REMOVE
@@ -41,20 +37,20 @@ func ServiceCall(method string, url string, body io.Reader) (map[string]any, err
 
 	res, serviceErr := hclient.GetHttpClient().Do(req)
 	if serviceErr != nil {
-		return nil, fmt.Errorf("Unexpected error using HTTP Client: %+v", serviceErr)
+		return nil, fmt.Errorf("unexpected error using HTTP Client: %+v", serviceErr)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		if res.StatusCode == 401 {
-			return nil, fmt.Errorf("Attempt to unauthorized access. Please login again, your session could be expired.")
+			return nil, fmt.Errorf("attempt to unauthorized access. please login again, your session could be expired")
 		}
-		return nil, fmt.Errorf("Unexpected service response error: %s", res.Status)
+		return nil, fmt.Errorf("unexpected service response error: %s", res.Status)
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&result)
 	if err != nil {
-		return nil, fmt.Errorf("Response decoding error while communicating with service: %+v", err)
+		return nil, fmt.Errorf("response decoding error while communicating with service: %+v", err)
 	}
 
 	return result, nil

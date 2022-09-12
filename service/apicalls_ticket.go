@@ -3,7 +3,6 @@ package service
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -40,7 +39,7 @@ func ObtainTicket(ticketPath string) (map[string]any, error) {
 	return result, nil
 }
 
-func SetTicketSecret(ticketPath string, secretData string) map[string]any {
+func SetTicketSecret(ticketPath string, secretData string) (map[string]any, error) {
 	postBody, _ := utils.GetPostBody("ticketPath", ticketPath, "secretData", secretData)
 	result, err := backend.ServiceCall(
 		http.MethodPost,
@@ -48,13 +47,13 @@ func SetTicketSecret(ticketPath string, secretData string) map[string]any {
 		strings.NewReader(string(postBody)),
 	)
 	if err != nil {
-		return map[string]any{"message": err.Error(), "status": "error"}
+		return nil, err
 	}
 
-	return result
+	return result, nil
 }
 
-func GetTicketByPath(path string) map[string]any {
+func GetTicketByPath(path string) (map[string]any, error) {
 	postBody, _ := utils.GetPostBody("ticketPath", path)
 	result, err := backend.ServiceCall(
 		http.MethodPost,
@@ -62,10 +61,10 @@ func GetTicketByPath(path string) map[string]any {
 		strings.NewReader(string(postBody)),
 	)
 	if err != nil {
-		return map[string]any{"message": err, "status": "error"}
+		return nil, err
 	}
 
-	return result
+	return result, nil
 }
 
 func DeleteTicket(ticketPath string) map[string]any {
@@ -97,7 +96,7 @@ func GetTicketSecret(ticketPath string) (map[string]any, error) {
 }
 
 func CreateTicket(ticketDataFilePath string) (map[string]any, error) {
-	fileData, err := ioutil.ReadFile(ticketDataFilePath)
+	fileData, err := os.ReadFile(ticketDataFilePath)
 	if err != nil {
 		fmt.Printf("Data file cannot be found: %v", ticketDataFilePath)
 		os.Exit(0)

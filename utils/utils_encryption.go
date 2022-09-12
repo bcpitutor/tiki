@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -108,7 +107,7 @@ func ExportEncryptedToken() ([]byte, error) {
 	outdirpath := fmt.Sprintf("%s/%s", homeFolder, ".tiki")
 	fPath := filepath.Join(outdirpath, TokenFile)
 
-	tokeEncyptedData, err := ioutil.ReadFile(fPath)
+	tokeEncyptedData, err := os.ReadFile(fPath)
 	if err != nil {
 		return nil, err
 	}

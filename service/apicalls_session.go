@@ -52,7 +52,7 @@ func RevokeSessionByEmail(email string) map[string]any {
 func GetSessionList(reqSessionType string) map[string]any {
 	parameters := url.Values{"sessionType": {reqSessionType}}
 
-	URL, err := url.Parse("/session/list")
+	URL, _ := url.Parse("/session/list")
 	URL.RawQuery = parameters.Encode()
 	url := URL.String()
 

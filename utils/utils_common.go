@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/denisbrodbeck/machineid"
@@ -33,7 +33,7 @@ func GetRefreshToken() (string, error) {
 	encFile := "tiki.rt.data"
 	fPath := filepath.Join(homeFolder, "/.tiki", encFile)
 
-	localTokenStore, err := ioutil.ReadFile(fPath)
+	localTokenStore, err := os.ReadFile(fPath)
 	if err != nil {
 		return "", err
 	}
@@ -56,7 +56,7 @@ func GetCurrentToken() (string, error) {
 	encFile := TokenFile
 	fPath := filepath.Join(homeFolder, "/.tiki", encFile) // TODO: update directory
 
-	localTokenStore, err := ioutil.ReadFile(fPath)
+	localTokenStore, err := os.ReadFile(fPath)
 	if err != nil {
 		return "", err
 	}

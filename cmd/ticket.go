@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -34,18 +33,17 @@ func init() {
 }
 
 func do_ticket(cmd *cobra.Command, args []string) {
-	profile := rootCmd.Flag("profile").Value.String()
 	jf, _ := rootCmd.Flags().GetBool("json")
 
-	appconfig.AppConfig.SelectedProfile = profile
+	appconfig.AppConfig.SelectedProfile = rootCmd.Flag("profile").Value.String()
 	appconfig.AppConfig.JsonOutput = jf
-	debug := appconfig.AppConfig.ViperConf.GetStringMap(profile)["debug"]
-	dbool, err := strconv.ParseBool(debug.(string))
-	if err != nil {
-		appconfig.AppConfig.Debug = false
-	} else {
-		appconfig.AppConfig.Debug = dbool
-	}
+	// debug := appconfig.AppConfig.ViperConf.GetStringMap(appconfig.AppConfig.SelectedProfile)["debug"]
+	// dbool, err := strconv.ParseBool(debug.(string))
+	// if err != nil {
+	// 	appconfig.AppConfig.Debug = false
+	// } else {
+	// 	appconfig.AppConfig.Debug = dbool
+	// }
 
 	if len(args) == 0 {
 		fmt.Printf("You need to specify a subcommand, such as create, obtain, delete or secret\n")
@@ -149,7 +147,7 @@ func do_ticket_obtain(cmd *cobra.Command, args []string) {
 
 	if !strings.Contains(ticketPath, "/") {
 		utils.ErrOutput(
-			fmt.Sprintf("Bad ticket path: %s\n", ticketPath),
+			fmt.Sprintf("Bad ticket path: %s", ticketPath),
 			appconfig.AppConfig.JsonOutput,
 			true,
 		)
@@ -158,7 +156,7 @@ func do_ticket_obtain(cmd *cobra.Command, args []string) {
 	result, err := service.ObtainTicket(ticketPath)
 	if err != nil {
 		utils.ErrOutput(
-			fmt.Sprintf("Error while obtaining ticket: %+v\n", err.Error()),
+			fmt.Sprintf("Error while obtaining ticket: %+v", err.Error()),
 			appconfig.AppConfig.JsonOutput,
 			true,
 		)
@@ -168,7 +166,6 @@ func do_ticket_obtain(cmd *cobra.Command, args []string) {
 		odata, _ := json.Marshal(result)
 		fmt.Printf("%s", string(odata))
 	} else {
-		fmt.Printf("Hayde: Hoppa\n")
 		fmt.Printf("AccessKeyId: [%s]\n", result["AccessKeyId"])
 		fmt.Printf("SecretAccessKey: [%s]\n", result["SecretAccessKey"])
 		fmt.Printf("SessionToken: [%s]\n", result["SessionToken"])
@@ -176,90 +173,55 @@ func do_ticket_obtain(cmd *cobra.Command, args []string) {
 	}
 }
 
-func do_ticket_secret(cmd *cobra.Command, args []string) {
-	if len(args) == 1 {
-		fmt.Printf("ticket secret requires a subcommand, which is either set or get\n")
-		return
-	}
-	ticketPath, _ := cmd.Flags().GetString("ticket")
-
-	switch args[1] {
-	case "set":
-		if len(args) == 2 {
-			fmt.Printf("ticket secret set subcommand requires a value\n")
-			return
-		}
-		result := service.SetTicketSecret(ticketPath, args[2])
-		newToken := result["newToken"]
-		utils.CheckRefreshToken(newToken)
-
-		fmt.Printf("%+s\n", result["status"])
-
-	case "get":
-		result, err := service.GetTicketSecret(ticketPath)
-		if err != nil {
-			fmt.Printf("Error: %s\n", err.Error())
-			os.Exit(-1)
-		}
-
-		newToken := result["newToken"]
-		utils.CheckRefreshToken(newToken)
-
-		fmt.Println(result["message"])
-	default:
-		fmt.Printf("Unknown ticket secret subcommand %s\n", args[1])
-		return
-	}
-}
-
-func do_ticket_create(cmd *cobra.Command) {
-	ticketDataJsonFilePath, err := cmd.Flags().GetString("dataFile")
-	if err != nil || ticketDataJsonFilePath == "" {
-		fmt.Printf("You need to specify a dataFile with -f switch, in non-interactive mode\n")
-		return
-	}
-
-	result, err := service.CreateTicket(ticketDataJsonFilePath)
-	utils.ErrOutput(
-		fmt.Sprintf("Error while creating ticket: %+v\n", err.Error()),
-		appconfig.AppConfig.JsonOutput,
-		true,
-	)
-
-	newToken := result["newToken"]
-	utils.CheckRefreshToken(newToken)
-
-	if result["status"] != "success" {
-		fmt.Printf("%+s\n", result["message"])
-	} else {
-		fmt.Printf("Ticket created successfully\n")
-	}
-}
-
 func do_ticket_info(cmd *cobra.Command, args []string) {
 	ticketPath, _ := cmd.Flags().GetString("ticket")
-	if !strings.Contains(ticketPath, "/") {
-		fmt.Printf("Bad ticket path: %s\n", ticketPath)
-		return
+	if ticketPath == "" {
+		utils.ErrOutput("You need to specify a ticket path", appconfig.AppConfig.JsonOutput, true)
 	}
-	result := service.GetTicketByPath(ticketPath)
+
+	if !strings.Contains(ticketPath, "/") {
+		utils.ErrOutput(
+			fmt.Sprintf("Bad ticket path: %s", ticketPath),
+			appconfig.AppConfig.JsonOutput,
+			true,
+		)
+	}
+	result, err := service.GetTicketByPath(ticketPath)
+	if err != nil {
+		utils.ErrOutput(
+			fmt.Sprintf("Error while looking up for ticket: %+v", err.Error()),
+			appconfig.AppConfig.JsonOutput,
+			true,
+		)
+	}
+
 	newToken := result["newToken"]
 	utils.CheckRefreshToken(newToken)
 
 	if result["status"] == "error" {
-		fmt.Println(result["message"])
-		return
+		utils.ErrOutput(
+			fmt.Sprintf("Error while obtaining ticket: %+v", result["status"]),
+			appconfig.AppConfig.JsonOutput,
+			true,
+		)
 	}
 
 	intfcData, err := json.Marshal(result)
 	if err != nil {
-		fmt.Println("err1:", err)
+		utils.ErrOutput(
+			fmt.Sprintf("Error while marshalling data: %+v\n", err.Error()),
+			appconfig.AppConfig.JsonOutput,
+			true,
+		)
 	}
-	//zlogger.Log.Info("intfcData: " + string(intfcData))
 
 	var tqr models.TicketQueryResponse
 	if err := json.Unmarshal(intfcData, &tqr); err != nil {
-		panic(err)
+		utils.ErrOutput(
+			fmt.Sprintf("Error while unmarshalling data: %+v\n", err.Error()),
+			appconfig.AppConfig.JsonOutput,
+			true,
+		)
 	}
 
 	jsonFlag, _ := cmd.Flags().GetBool("json")
@@ -383,6 +345,98 @@ func do_ticket_info(cmd *cobra.Command, args []string) {
 
 	table.SetStyle(simpletable.StyleDefault)
 	fmt.Println(table.String())
+}
+
+func do_ticket_secret(cmd *cobra.Command, args []string) {
+	if len(args) == 1 {
+		utils.ErrOutput(
+			"ticket secret requires a subcommand, which is either set or get",
+			appconfig.AppConfig.JsonOutput,
+			true,
+		)
+	}
+
+	ticketPath, _ := cmd.Flags().GetString("ticket")
+	if ticketPath == "" {
+		utils.ErrOutput("You need to specify a ticket path", appconfig.AppConfig.JsonOutput, true)
+	}
+
+	if !strings.Contains(ticketPath, "/") {
+		utils.ErrOutput(
+			fmt.Sprintf("Bad ticket path: %s", ticketPath),
+			appconfig.AppConfig.JsonOutput,
+			true,
+		)
+	}
+
+	switch args[1] {
+	case "set":
+		if len(args) == 2 {
+			utils.ErrOutput(
+				"ticket secret set subcommand requires a value",
+				appconfig.AppConfig.JsonOutput,
+				true,
+			)
+		}
+		result, err := service.SetTicketSecret(ticketPath, args[2])
+		if err != nil {
+			utils.ErrOutput(
+				fmt.Sprintf("Error while setting ticket secret: %+v", err.Error()),
+				appconfig.AppConfig.JsonOutput,
+				true,
+			)
+		}
+
+		newToken := result["newToken"]
+		utils.CheckRefreshToken(newToken)
+
+		fmt.Printf("%+s\n", result["status"])
+
+	case "get":
+		result, err := service.GetTicketSecret(ticketPath)
+		if err != nil {
+			utils.ErrOutput(
+				fmt.Sprintf("Error while getting ticket secret: %+v", err.Error()),
+				appconfig.AppConfig.JsonOutput,
+				true,
+			)
+		}
+
+		newToken := result["newToken"]
+		utils.CheckRefreshToken(newToken)
+
+		fmt.Println(result["message"])
+	default:
+		utils.ErrOutput(
+			fmt.Sprintf("Unknown ticket secret subcommand %s\n", args[1]),
+			appconfig.AppConfig.JsonOutput,
+			true,
+		)
+	}
+}
+
+func do_ticket_create(cmd *cobra.Command) {
+	ticketDataJsonFilePath, err := cmd.Flags().GetString("dataFile")
+	if err != nil || ticketDataJsonFilePath == "" {
+		fmt.Printf("You need to specify a dataFile with -f switch, in non-interactive mode\n")
+		return
+	}
+
+	result, err := service.CreateTicket(ticketDataJsonFilePath)
+	utils.ErrOutput(
+		fmt.Sprintf("Error while creating ticket: %+v\n", err.Error()),
+		appconfig.AppConfig.JsonOutput,
+		true,
+	)
+
+	newToken := result["newToken"]
+	utils.CheckRefreshToken(newToken)
+
+	if result["status"] != "success" {
+		fmt.Printf("%+s\n", result["message"])
+	} else {
+		fmt.Printf("Ticket created successfully\n")
+	}
 }
 
 func do_ticket_delete(cmd *cobra.Command) {
