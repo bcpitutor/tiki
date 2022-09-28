@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/bcpitutor/tiki/service"
-	"github.com/bcpitutor/tiki/subcmd"
 	"github.com/bcpitutor/tiki/utils"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +37,7 @@ func do_auth(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	subcmd.GoogleAuthenticationViaTikiServer(profile, cmd, args)
+	utils.GoogleAuthenticationViaTikiServer(profile, cmd, args)
 }
 
 func do_auth_renew() {

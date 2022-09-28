@@ -29,6 +29,7 @@ func init() {
 	ticketCmd.Flags().StringP("dataFile", "f", "", "Json data file path for the ticket")
 	ticketCmd.Flags().StringP("ticketType", "T", "", "TicketType, such as awsTicket")
 	ticketCmd.Flags().StringP("ticket", "t", "", "Path for the ticket")
+	ticketCmd.Flags().BoolP("env", "E", false, "Create env variables")
 	rootCmd.AddCommand(ticketCmd)
 }
 
@@ -46,7 +47,7 @@ func do_ticket(cmd *cobra.Command, args []string) {
 	// }
 
 	if len(args) == 0 {
-		fmt.Printf("You need to specify a subcommand, such as create, obtain, delete or secret\n")
+		fmt.Printf("You need to specify a subcommand, such as create, info, obtain, delete or secret\n")
 		return
 	}
 
@@ -153,6 +154,8 @@ func do_ticket_obtain(cmd *cobra.Command, args []string) {
 		)
 	}
 
+	envMode, _ := cmd.Flags().GetBool("env")
+
 	result, err := service.ObtainTicket(ticketPath)
 	if err != nil {
 		utils.ErrOutput(
@@ -166,10 +169,18 @@ func do_ticket_obtain(cmd *cobra.Command, args []string) {
 		odata, _ := json.Marshal(result)
 		fmt.Printf("%s", string(odata))
 	} else {
-		fmt.Printf("AccessKeyId: [%s]\n", result["AccessKeyId"])
-		fmt.Printf("SecretAccessKey: [%s]\n", result["SecretAccessKey"])
-		fmt.Printf("SessionToken: [%s]\n", result["SessionToken"])
-		fmt.Printf("Region: [%s]\n", result["Region"])
+		if envMode {
+			fmt.Printf("export AWS_ACCESS_KEY_ID=%s\n", result["AccessKeyId"])
+			fmt.Printf("export AWS_SECRET_ACCESS_KEY=%s\n", result["SecretAccessKey"])
+			fmt.Printf("export AWS_SESSION_TOKEN=%s\n", result["SessionToken"])
+			fmt.Printf("export AWS_REGION=%s\n", result["Region"])
+			fmt.Printf("\n\n")
+		} else {
+			fmt.Printf("AccessKeyId: [%s]\n", result["AccessKeyId"])
+			fmt.Printf("SecretAccessKey: [%s]\n", result["SecretAccessKey"])
+			fmt.Printf("SessionToken: [%s]\n", result["SessionToken"])
+			fmt.Printf("Region: [%s]\n", result["Region"])
+		}
 	}
 }
 
@@ -405,7 +416,22 @@ func do_ticket_secret(cmd *cobra.Command, args []string) {
 		newToken := result["newToken"]
 		utils.CheckRefreshToken(newToken)
 
-		fmt.Println(result["message"])
+		// TODO: check if secret ends with a new line char
+		if appconfig.AppConfig.JsonOutput {
+			type TicketSecretOutput struct {
+				Secret string `json:"secret"`
+			}
+
+			tso := TicketSecretOutput{
+				Secret: result["message"].(string),
+			}
+
+			odata, _ := json.Marshal(tso)
+			fmt.Printf("%s", string(odata))
+		} else {
+			fmt.Printf("%s", result["message"])
+		}
+
 	default:
 		utils.ErrOutput(
 			fmt.Sprintf("Unknown ticket secret subcommand %s\n", args[1]),
@@ -440,9 +466,15 @@ func do_ticket_create(cmd *cobra.Command) {
 }
 
 func do_ticket_delete(cmd *cobra.Command) {
+
 	ticketPath, err := cmd.Flags().GetString("ticket")
-	if err != nil || ticketPath == "" {
-		fmt.Printf("Error: %s\n", err)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return
+	}
+
+	if ticketPath == "" {
+		fmt.Printf("You need to specify a ticket path\n")
 		return
 	}
 

@@ -25,13 +25,12 @@ func init() {
 	tikidir := utils.InitalizeTikiDirectory()
 	err := appconfig.InitConfig(tikidir)
 	if err != nil {
-		fmt.Printf("Cannot read config file: %s\n", err)
-		os.Exit(-1)
+		utils.ErrOutput(
+			fmt.Sprintf("Cannot read config file: %s\n", err.Error()),
+			false,
+			true)
+		os.Exit(-2)
 	}
-
-	// profile := rootCmd.Flag("profile").Value.String()
-	// fmt.Printf("Setting %s into selected profile\n", profile)
-	//appconfig.AppConfig.SelectedProfile = profile
 }
 
 func Execute() {

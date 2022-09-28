@@ -12,7 +12,10 @@ import (
 func init() {
 	mId, err := utils.GetMachineId()
 	if err != nil {
-		fmt.Printf("Cannot detect Machine ID, quitting. Error: %v\n", err)
+		utils.ErrOutput(
+			fmt.Sprintf("Cannot detect Machine ID, quitting. Error: %v\n", err.Error()),
+			false,
+			true)
 		os.Exit(-1)
 	}
 
@@ -23,8 +26,11 @@ func init() {
 	} else {
 		// TODO: Check if this is a valid operation?
 		//utils.Enckey.SetEncKey("01234567012345670123456776543210")
-		fmt.Printf("Cannot generate Machine ID, quitting.\n")
-		os.Exit(1)
+		utils.ErrOutput(
+			"Cannot generate Machine ID, quitting",
+			false,
+			true)
+		os.Exit(-1)
 	}
 }
 
